@@ -1,0 +1,8 @@
+[workspace]
+
+members = [
+    "ezgfx",
+    "ezgfx-core",
+    "ezgfx-derive",
+    "ezgfx-examples"
+]

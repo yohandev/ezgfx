@@ -1,0 +1,9 @@
+[package]
+name = "ezgfx"
+version = "0.1.0"
+authors = ["yohandev"]
+edition = "2018"
+
+[dependencies]
+ezgfx-core = { path = "../ezgfx-core" }
+ezgfx-derive = { path = "../ezgfx-derive" }
