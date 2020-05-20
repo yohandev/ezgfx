@@ -1,42 +1,57 @@
-use glsl::syntax::*;
-use glsl::parser::*;
 use wgpu::*;
 
-/// represents a bindable shader resource
-pub(crate) trait ShaderResource
+// /// represents a bindable shader resource
+// pub(crate) trait ShaderResource
+// {
+//     const DESC: BindGroupLayoutDescriptor<'static>;
+//     fn desc<'a>() -> &'a BindGroupLayoutDescriptor<'a>;
+
+//     fn bind_group() -> BindGroup;
+//     fn layout() -> BindGroupLayout;
+// }
+
+// pub(crate) trait ShaderModule
+// {
+//     const SOURCE: str;
+
+//     fn compile();
+//     fn resource(i: usize);
+// }
+
+pub fn list_layout(path:&str, src: &str)
 {
-    const DESC: BindGroupLayoutDescriptor<'static>;
-    fn desc<'a>() -> &'a BindGroupLayoutDescriptor<'a>;
+    use shaderc::*;
+    use spirv_reflect::*;
 
-    fn bind_group() -> BindGroup;
-    fn layout() -> BindGroupLayout;
-}
-
-pub(crate) trait ShaderModule
-{
-    const SOURCE: str;
-
-    fn compile();
-    fn resource(i: usize);
-}
-
-fn get_resources(src: &str)
-{
-    let stage = TranslationUnit::parse(src);
-
-    if stage.is_err()
+    let mut compiler = Compiler::new().unwrap();
+    let compiled = compiler.compile_into_spirv(src, ShaderKind::Vertex, path, "main", None).unwrap();
+    
+    match ShaderModule::load_u32_data(compiled.as_binary())
     {
-        panic!("shader err: {}", stage.unwrap_err());
-    }
-    let stage = stage.unwrap();
-
-    for stat in stage
-    {
-        match stat
+        Ok(ref mut a) =>
         {
-            ExternalDeclaration::Preprocessor(_) => {}
-            ExternalDeclaration::FunctionDefinition(_) => {}
-            ExternalDeclaration::Declaration(_) => {}
-        }
-    }
+            let b = a.enumerate_descriptor_bindings(None).unwrap();
+
+            for c in &b
+            {
+                let name = match &c.type_description
+                {
+                    Some(d) =>
+                    {
+                        if d.type_name.is_empty()
+                        {
+                            &c.name
+                        }
+                        else
+                        {
+                            &d.type_name
+                        }
+                    },
+                    _ => &c.name
+                };
+                println!("{:?} {} is (set = {}, binding = {})", c.resource_type, name, c.set, c.binding);
+            }
+        },
+        Err(e) => panic!(e)
+    };
 }

@@ -183,11 +183,11 @@ fn find_buffer_types(data: &ItemStruct) -> (&Type, &Type, Vec<&Field>, Vec<&Type
     (ver_ty.unwrap(), ind_ty.unwrap(), rem, rem_ty)
 }
 
-/// #[attribute_attr(set = 0, stage = vertex)] --> #[attribute_attr(0, vertex)]
-fn pack_pipeline_attr(args: TokenStream, item: TokenStream) -> TokenStream
-{
-    let args = parse_macro_input!(args as AttributeArgs);
-    let input = parse_macro_input!(item as ItemStruct);
+// #[attribute_attr(set = 0, stage = vertex)] --> #[attribute_attr(0, vertex)]
+// fn pack_pipeline_attr(args: TokenStream, item: TokenStream) -> TokenStream
+// {
+//     let args = parse_macro_input!(args as AttributeArgs);
+//     let input = parse_macro_input!(item as ItemStruct);
 
     
-}
+// }
