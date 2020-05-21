@@ -1,12 +1,8 @@
-use ezgfx::winit::event_loop::*;
-use ezgfx::*;
-
-mod pipeline;
-mod vertex;
+mod triangle;
 
 fn main()
 {
-    ezgfx::list_layout("assets/shader.vert", include_str!("assets/shader.vert"));
+    //ezgfx::list_layout("assets/shader.vert", include_str!("assets/shader.vert"));
     // let evt_loop = EventLoop::new();
 
     // let (win, ren) = RenderQueue::create(&evt_loop);

@@ -1,15 +1,16 @@
-//pub use wgpu::{ VertexAttributeDescriptor, VertexFormat};
-//pub use bytemuck::{ Zeroable, Pod };
 use bytemuck::*;
 use wgpu::*;
 
 /// represents a vertex, to be used in meshes
 pub trait Vertex: Pod
 {
+    /// description of this shader, as represented in shaders
     const DESC: &'static [VertexAttributeDescriptor];
+    /// size of a single vertex, in bytes
     const SIZE: usize;
 }
 
+/// implementors can be used in vertex descriptions 
 pub trait VertexAttribute
 {
     const FORMAT: VertexFormat;

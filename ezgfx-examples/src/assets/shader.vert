@@ -15,7 +15,8 @@ layout(set = 2, binding = 0) uniform PooPoo
     float pee;
 };
 layout(set = 0, binding = 0) uniform texture2D MyTex;
-layout(set = 0, binding = 1) uniform sampler MySampler;
+layout(set = 0, binding = 1) uniform texture2D YourTex;
+layout(set = 0, binding = 2) uniform sampler MySampler;
 
 void main()
 {

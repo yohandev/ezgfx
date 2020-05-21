@@ -1,24 +1,15 @@
-use wgpu::*;
+use crate::*;
 
-pub trait Pipeline
+/// describes a pipeline used to render things
+pub trait RenderPipeline
 {
-    /// whether this pipeline is used for rendering or compute operations
-    const TYPE: PipelineType;
+    /// type of vertex used in this pipeline
+    type Vertex: Vertex;
+    /// type of index used in this pipeline
+    type Index: Index;
 
-    /// path to the shader(s) - 2(frag + vert) for render, 1(comp) for compute
-    const SHADER_PATHS: &'static [&'static str];
-
-    /// create an instance of the pipeline
-    fn create(queue: crate::RenderQueue);
-}
-
-pub enum PipelineType
-{
-    Render,
-    Compute
-}
-
-pub trait PipelineResource
-{
-    fn bind_layout(index: usize, stage: ShaderStage);
+    /// path to the vertex shader
+    const VERT_PATH: str;
+    /// path to the fragment shader
+    const FRAG_PATH: str;
 }

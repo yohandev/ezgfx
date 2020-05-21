@@ -12,11 +12,7 @@ pub struct PosTexVertex
 }
 
 #[pipeline(render)]
-pub struct MyPipeline
-{
-    texture: TextureSet,
-    uniform: MyUniform
-}
+pub struct MyPipeline;
 
 impl RenderPipeline for MyPipeline
 {
