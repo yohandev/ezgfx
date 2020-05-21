@@ -15,6 +15,6 @@ impl MyGraphicsPipeline
     type Vertex: Vertex = PosColorVertex;
     type Index: Index   = u16;
 
-    const VERT_PATH: str = "ezgfx-examples/src/assets/shader.vert";
-    const FRAG_PATH: str = "ezgfx-examples/src/assets/shader.frag";
+    const VERT_PATH: str = "assets/shader.vert";
+    const FRAG_PATH: str = "assets/shader.frag";
 }

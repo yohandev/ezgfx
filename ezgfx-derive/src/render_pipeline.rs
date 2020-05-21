@@ -63,7 +63,14 @@ pub fn process(item: TokenStream) -> TokenStream
 
 fn compile(stage: ShaderKind, path: &str) -> CompilationArtifact
 {
-    let rpath = std::env::current_dir().unwrap().join(path);
+    let rpath = std::path::Path::new // fallback: std::env::current_dir().unwrap().join(path)
+    (
+        std::env::var("CARGO_MANIFEST_DIR")
+            .unwrap()
+            .as_str()
+    )
+    .join("src")
+    .join(path);
 
     let source = std::fs::read_to_string(&rpath)
         .expect(format!("shader not found: {:?}", rpath).as_str());
