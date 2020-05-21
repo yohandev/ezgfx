@@ -2,6 +2,8 @@ mod triangle;
 
 fn main()
 {
+    triangle::MyGraphicsPipeline::print_pipeline_info();
+
     //ezgfx::list_layout("assets/shader.vert", include_str!("assets/shader.vert"));
     // let evt_loop = EventLoop::new();
 

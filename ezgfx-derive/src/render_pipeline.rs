@@ -11,8 +11,8 @@ pub fn process(item: TokenStream) -> TokenStream
 {
     let input = parse_macro_input!(item as ItemImpl);
 
-    let v_type = get_type_value("Vertex", &input.items);
-    let i_type = get_type_value("Index", &input.items);
+    let v_type = format!("{}", get_type_value("Vertex", &input.items));
+    let i_type = format!("{}", get_type_value("Index", &input.items));
 
     let v_path = match get_const_value("VERT_PATH", "str", &input.items)
     {
@@ -29,18 +29,32 @@ pub fn process(item: TokenStream) -> TokenStream
     let frag = compile(ShaderKind::Vertex, f_path.as_str());
 
     let v = vert.as_binary();
-    let f = vert.as_binary();
+    let f = frag.as_binary();
 
     let vu = uniforms(&v);
     let fu = uniforms(&f);
 
+    let vu_str = vu.iter().map(|u| format!("{:?}", u));
+    let fu_str = fu.iter().map(|u| format!("{:?}", u));
+
     let name = input.self_ty;
+    let (impl_gene, type_gene, where_clause) = input.generics.split_for_impl();
 
     let expanded = quote!
     {
-        impl #name
+        impl #impl_gene #name #type_gene #where_clause
         {
+            pub fn print_pipeline_info()
+            {
+                println!("vertex type: {}", #v_type);
+                println!("index type: {}", #i_type);
 
+                println!("vertex uniforms:");
+                #(println!("{}", #vu_str );)*
+
+                println!("\nfragment uniforms:");
+                #(println!("{}", #fu_str );)*
+            }
         }
     };
 
@@ -60,7 +74,7 @@ fn compile(stage: ShaderKind, path: &str) -> CompilationArtifact
         .unwrap()
 }
 
-fn uniforms(spirv: &[u32]) -> Vec<(ReflectResourceType, String, u32, u32)>
+fn uniforms(spirv: &[u32]) -> Vec<Uniform>
 {
     match ShaderModule::load_u32_data(spirv)
     {
@@ -80,11 +94,20 @@ fn uniforms(spirv: &[u32]) -> Vec<(ReflectResourceType, String, u32, u32)>
                         },
                         _ => c.name.clone()
                     };
-                    (c.resource_type, name, c.set, c.binding)
+                    Uniform { ty: c.resource_type, name, set: c.set, binding: c.binding }
                 }
             )
             .collect()
         },
         Err(e) => panic!(e)
     }
+}
+
+#[derive(Debug)]
+struct Uniform
+{
+    pub ty: ReflectResourceType,
+    pub name: String,
+    pub set: u32,
+    pub binding: u32
 }
