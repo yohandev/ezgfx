@@ -3,14 +3,15 @@ pub mod winit { pub use winit::*; }
 pub mod wgpu { pub use wgpu::*; }
 
 mod pipeline;
-mod texture;
-mod shader;
+mod uniform;
 mod vertex;
 mod index;
 mod queue;
+mod sized;
 
 pub use self::pipeline::*;
-pub use self::shader::*;
+pub use self::uniform::*;
 pub use self::vertex::*;
 pub use self::index::*;
 pub use self::queue::*;
+pub use self::sized::*;

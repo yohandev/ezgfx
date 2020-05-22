@@ -2,6 +2,7 @@ use proc_macro::*;
 
 mod render_pipeline;
 mod pipeline;
+mod uniform;
 mod vertex;
 mod util;
 
@@ -21,4 +22,10 @@ pub fn derive_vertex(tokens: TokenStream) -> TokenStream
 pub fn pipeline(args: TokenStream, item: TokenStream) -> TokenStream
 {
     pipeline::impl_pipeline(args, item)
+}
+
+#[proc_macro_attribute]
+pub fn uniform(args: TokenStream, item: TokenStream) -> TokenStream
+{
+    uniform::impl_uniform(args, item)
 }

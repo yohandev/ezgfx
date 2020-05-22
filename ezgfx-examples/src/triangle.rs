@@ -7,6 +7,13 @@ pub struct PosColorVertex
     pub color: [f32; 3]
 }
 
+#[uniform]
+pub struct TransformUniform
+{
+    pub view_proj: [f32; 16],
+    pub model: [f32; 16]
+}
+
 pub struct MyGraphicsPipeline;
 
 #[pipeline(render)]

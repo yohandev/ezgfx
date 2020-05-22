@@ -35,12 +35,15 @@ pub fn derive_vertex(tokens: TokenStream) -> TokenStream
     {
         impl #impl_gene ezgfx::Vertex for #name #type_gene #where_clause
         {
-            const SIZE: usize = #size;
-
             const DESC: &'static [ezgfx::wgpu::VertexAttributeDescriptor] =
             &[
                 #attr
             ];
+        }
+
+        impl #impl_gene ezgfx::BufMember for #name #type_gene #where_clause
+        {
+            const SIZE: usize = #size;
         }
 
         unsafe impl #impl_gene ezgfx::bytemuck::Pod for #name #type_gene #where_clause{ }
@@ -100,7 +103,7 @@ fn get_attribute_descriptors(data: &Data) -> (proc_macro2::TokenStream, proc_mac
         };
 
         let add =               // vertex attribtue size for this loop
-            quote! { + <#typ as ezgfx::VertexAttribute>::SIZE };
+            quote! { + <#typ as ezgfx::BufMember>::SIZE };
         
         off =                   // update buffer offset
             quote! { #off #add };

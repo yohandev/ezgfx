@@ -25,6 +25,11 @@ pub fn process(item: TokenStream) -> TokenStream
         _ => panic!("an error occured...") 
     };
 
+    if input.items.len() > 4
+    {
+        panic!("additional fields not related to the render pipeline will be deleted. move them to an external impl block");
+    }
+
     let vert = compile(ShaderKind::Vertex, v_path.as_str());
     let frag = compile(ShaderKind::Vertex, f_path.as_str());
 
