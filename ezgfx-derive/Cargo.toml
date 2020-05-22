@@ -10,6 +10,7 @@ proc-macro = true
 [dependencies]
 ezgfx-core = { path = "../ezgfx-core" }
 spirv-reflect = "0.2.3"
+Inflector = "0.11.4"
 proc-macro2 = "1.0"
 shaderc = "0.6.2"
 quote = "1.0.6"

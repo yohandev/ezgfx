@@ -1,5 +1,7 @@
 use proc_macro::TokenStream;
 use spirv_reflect::types::*;
+use inflector::Inflector;
+use proc_macro2::Span;
 use spirv_reflect::*;
 use quote::quote;
 use shaderc::*;
@@ -45,6 +47,19 @@ pub fn process(item: TokenStream) -> TokenStream
     let name = input.self_ty;
     let (impl_gene, type_gene, where_clause) = input.generics.split_for_impl();
 
+    let v_ty = vu.iter().map(|v| match v.ty
+    {
+        ReflectResourceType::Sampler => Ident::new("ezgfx::Sampler", Span::call_site()),
+        ReflectResourceType::CombinedImageSampler => Ident::new("not_yet_supported", Span::call_site()),
+        ReflectResourceType::ConstantBufferView => Ident::new(v.name.as_str(), Span::call_site())        ,
+        ReflectResourceType::ShaderResourceView => Ident::new("ezgfx::Texture", Span::call_site()),
+        ReflectResourceType::UnorderedAccessView => Ident::new("not_yet_supported", Span::call_site()),
+        ReflectResourceType::Undefined => panic!("undefined shader resource type {}", v.name)
+    });
+    let v_ty: Vec<proc_macro2::Ident> = v_ty.collect();
+    let v_name = vu.iter().map(|v| Ident::new(&v.name.to_snake_case(), Span::call_site()));
+    let v_bindings = vu.iter().map(|v| v.binding);
+
     let expanded = quote!
     {
         impl #impl_gene #name #type_gene #where_clause
@@ -59,6 +74,28 @@ pub fn process(item: TokenStream) -> TokenStream
 
                 println!("\nfragment uniforms:");
                 #(println!("{}", #fu_str );)*
+            }
+
+            pub fn create(render: &ezgfx::RenderQueue, #(#v_name : #v_ty,)*)
+            {
+                // -- create layout --
+                let bind_layout = render.device.create_bind_group_layout   // bind group layout
+                (
+                    &ezgfx::wgpu::BindGroupLayoutDescriptor
+                    {
+                        bindings:
+                        &[
+                            #(
+                            ezgfx::wgpu::BindGroupLayoutEntry
+                            {
+                                binding: #v_bindings,
+                                visibility: ezgfx::wgpu::ShaderStage::VERTEX,
+                                ty: ezgfx::wgpu::BindingType::UniformBuffer { dynamic: false }
+                            }),*
+                        ],
+                        label: Some("texture_bind_group_layout")
+                    }
+                );
             }
         }
     };
