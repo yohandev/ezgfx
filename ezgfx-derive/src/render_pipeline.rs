@@ -76,7 +76,7 @@ pub fn process(item: TokenStream) -> TokenStream
                 #(println!("{}", #fu_str );)*
             }
 
-            pub fn create(render: &ezgfx::RenderQueue, #(#v_name : #v_ty,)*)
+            pub fn create(render: &ezgfx::RenderQueue, #(#v_name : &#v_ty,)*)
             {
                 // -- create layout --
                 let bind_layout = render.device.create_bind_group_layout   // bind group layout
