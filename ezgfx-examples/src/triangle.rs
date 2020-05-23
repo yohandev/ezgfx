@@ -39,7 +39,7 @@ pub fn run()
     let (win, ren) = RenderQueue::create(&evt_loop);
     
     let uni = TransformUniform::create(&ren, [0.0; 16], [0.0; 16]);
-    let pip = MyGraphicsPipeline::create(&ren, &uni);
+    let pip = MyGraphicsPipeline::create(&ren, &uni, &uni);
 
     evt_loop.run
     (

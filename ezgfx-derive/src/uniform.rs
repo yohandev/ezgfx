@@ -9,6 +9,7 @@ pub fn impl_uniform(_: TokenStream, item: TokenStream) -> TokenStream
 
     let vis = input.vis;
     let name = input.ident;
+    let name_str = name.to_string();
     let (impl_gene, type_gene, where_clause) = input.generics.split_for_impl();
     
     let fields = input.fields.iter();
@@ -41,6 +42,13 @@ pub fn impl_uniform(_: TokenStream, item: TokenStream) -> TokenStream
                     buffer: &self.buf,
                     range: 0..Self::SIZE as ezgfx::wgpu::BufferAddress
                 }
+            }
+
+            fn matches(&self, shader_repr: &ezgfx::spirv_reflect::types::ReflectDescriptorBinding) -> bool
+            {
+                // TODO: size check and fields check
+                shader_repr.resource_type == ezgfx::spirv_reflect::types::ReflectResourceType::ConstantBufferView &&
+                shader_repr.name == #name_str
             }
         }
 

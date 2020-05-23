@@ -1,8 +1,6 @@
 use proc_macro::TokenStream;
-use spirv_reflect::types::*;
 use inflector::Inflector;
 use proc_macro2::Span;
-use spirv_reflect::*;
 use quote::quote;
 use shaderc::*;
 use syn::*;
@@ -33,7 +31,7 @@ pub fn process(item: TokenStream) -> TokenStream
     }
 
     let vert = compile(ShaderKind::Vertex, v_path.as_str());
-    let frag = compile(ShaderKind::Vertex, f_path.as_str());
+    let frag = compile(ShaderKind::Fragment, f_path.as_str());
 
     let v = vert.as_binary();
     let f = frag.as_binary();
@@ -41,61 +39,51 @@ pub fn process(item: TokenStream) -> TokenStream
     let vu = uniforms(&v);
     let fu = uniforms(&f);
 
-    let vu_str = vu.iter().map(|u| format!("{:?}", u));
-    let fu_str = fu.iter().map(|u| format!("{:?}", u));
+    let (binding_group_layouts, sets) = bind_group_layout_descriptors(&[&vu, &fu]);
+    let binding_group_layout_sets = sets.iter().map(|s| Ident::new(format!("binding_group_layout_set_{}", s).as_str(), Span::call_site()));
 
-    let name = input.self_ty;
+    //panic!("{:?}", binding_group_layouts);
+
+    let uniform_names = vu.iter().chain(fu.iter()).map(|u| &u.name);
+
+    let pipeline_name = input.self_ty;
+    let pipeline_name_str = quote! {#pipeline_name}.to_string().to_snake_case();
+
     let (impl_gene, type_gene, where_clause) = input.generics.split_for_impl();
 
-    let v_ty = vu.iter().map(|v| match v.ty
-    {
-        ReflectResourceType::Sampler => Ident::new("ezgfx::Sampler", Span::call_site()),
-        ReflectResourceType::CombinedImageSampler => Ident::new("not_yet_supported", Span::call_site()),
-        ReflectResourceType::ConstantBufferView => Ident::new(v.name.as_str(), Span::call_site())        ,
-        ReflectResourceType::ShaderResourceView => Ident::new("ezgfx::Texture", Span::call_site()),
-        ReflectResourceType::UnorderedAccessView => Ident::new("not_yet_supported", Span::call_site()),
-        ReflectResourceType::Undefined => panic!("undefined shader resource type {}", v.name)
-    });
-    let v_ty: Vec<proc_macro2::Ident> = v_ty.collect();
-    let v_name = vu.iter().map(|v| Ident::new(&v.name.to_snake_case(), Span::call_site()));
-    let v_bindings = vu.iter().map(|v| v.binding);
+    //panic!("{:?}", binding_group_layouts);
 
     let expanded = quote!
     {
-        impl #impl_gene #name #type_gene #where_clause
+        impl #impl_gene #pipeline_name #type_gene #where_clause
         {
-            pub fn print_pipeline_info()
-            {
-                println!("vertex type: {}", #v_type);
-                println!("index type: {}", #i_type);
-
-                println!("vertex uniforms:");
-                #(println!("{}", #vu_str );)*
-
-                println!("\nfragment uniforms:");
-                #(println!("{}", #fu_str );)*
-            }
-
-            pub fn create(render: &ezgfx::RenderQueue, #(#v_name : &#v_ty,)*)
+            pub fn create(render: &ezgfx::RenderQueue, #(#uniform_names : &ezgfx::Uniform,)*)
             {
                 // -- create layout --
-                let bind_layout = render.device.create_bind_group_layout   // bind group layout
-                (
-                    &ezgfx::wgpu::BindGroupLayoutDescriptor
-                    {
-                        bindings:
-                        &[
-                            #(
-                            ezgfx::wgpu::BindGroupLayoutEntry
-                            {
-                                binding: #v_bindings,
-                                visibility: ezgfx::wgpu::ShaderStage::VERTEX,
-                                ty: ezgfx::wgpu::BindingType::UniformBuffer { dynamic: false }
-                            }),*
-                        ],
-                        label: Some("texture_bind_group_layout")
-                    }
-                );
+                // let bind_layout = render.device.create_bind_group_layout   // bind group layout
+                // (
+                //     &ezgfx::wgpu::BindGroupLayoutDescriptor
+                //     {
+                //         bindings:
+                //         &[
+                //             #(),*
+                //         ],
+                //         label: Some(format!("{}_bind_group_layout", #name_str).as_str())
+                //     }
+                // );
+                #(
+                    let #binding_group_layout_sets = render.device.create_bind_group_layout
+                    (
+                        &ezgfx::wgpu::BindGroupLayoutDescriptor
+                        {
+                            bindings:
+                            &[
+                                #binding_group_layouts
+                            ],
+                            label: Some(format!("{}_bind_group_layout", #pipeline_name_str).as_str())
+                        }
+                    );
+                )*
             }
         }
     };
@@ -125,6 +113,8 @@ fn compile(stage: ShaderKind, path: &str) -> CompilationArtifact
 
 fn uniforms(spirv: &[u32]) -> Vec<Uniform>
 {
+    use ezgfx_core::spirv_reflect::*;
+
     match ShaderModule::load_u32_data(spirv)
     {
         Ok(ref mut a) =>
@@ -143,7 +133,13 @@ fn uniforms(spirv: &[u32]) -> Vec<Uniform>
                         },
                         _ => c.name.clone()
                     };
-                    Uniform { ty: c.resource_type, name, set: c.set, binding: c.binding }
+                    let name = Ident::new
+                    (
+                        format!("{:?}_{}", a.get_shader_stage(), name).to_snake_case().as_str(),
+                        Span::call_site()
+                    );
+
+                    Uniform { name, set: c.set, binding: c.binding }
                 }
             )
             .collect()
@@ -155,8 +151,67 @@ fn uniforms(spirv: &[u32]) -> Vec<Uniform>
 #[derive(Debug)]
 struct Uniform
 {
-    pub ty: ReflectResourceType,
-    pub name: String,
+    pub name: Ident,
     pub set: u32,
-    pub binding: u32
+    pub binding: u32,
+}
+
+fn bind_group_layout_descriptors(uniforms: &[&Vec<Uniform>]) -> (Vec<proc_macro2::TokenStream>, Vec<usize>)
+{
+    let mut tks =                               // token streams
+        Vec::<proc_macro2::TokenStream>::new();
+
+    for uniform_vec in uniforms.iter()
+    {
+        for uniform in uniform_vec.iter()
+        {
+            let set = uniform.set as usize;     // set
+            let bin = uniform.binding;          // binding
+            let sta =                           // shader stage
+            if uniform.name.to_string().starts_with("vertex")
+            {
+                quote! {ezgfx::wgpu::ShaderStage::VERTEX}
+            }
+            else if uniform.name.to_string().starts_with("fragment")
+            {
+                quote! {ezgfx::wgpu::ShaderStage::FRAGMENT}
+            }
+            else
+            {
+                panic!("expected input shader to be vertex or fragment!")
+            };
+            let nam = &uniform.name;             // name
+
+            let siz = std::cmp::max(tks.len(), set + 1);
+            tks.resize(siz, quote! {});         // resize
+            
+            let pre = &tks[set];                // previous tokens
+            tks[set] = quote!
+            {
+                #pre
+                ezgfx::wgpu::BindGroupLayoutEntry
+                {
+                    binding: #bin,
+                    visibility: #sta,
+                    ty: #nam.ty()
+                },
+            }
+        }
+    }
+
+    let mut out_tks =                           // out token streams
+        Vec::<proc_macro2::TokenStream>::new();
+    let mut out_ind =                           // out set indices
+        Vec::<usize>::new(); 
+
+    for (i, t) in tks.iter().enumerate()        // remove empties
+    {
+        if t.is_empty()
+        {
+            continue;
+        }
+        out_tks.push(t.to_owned());
+        out_ind.push(i);
+    }
+    (out_tks, out_ind)
 }

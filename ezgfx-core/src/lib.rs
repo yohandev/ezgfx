@@ -1,3 +1,4 @@
+pub mod spirv_reflect { pub use spirv_reflect::*; }
 pub mod bytemuck { pub use bytemuck::*; }
 pub mod winit { pub use winit::*; }
 pub mod wgpu { pub use wgpu::*; }

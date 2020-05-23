@@ -5,9 +5,10 @@ authors = ["yohandev"]
 edition = "2018"
 
 [dependencies]
+spirv-reflect = "0.2.3"
+bytemuck = "1.2.0"
+futures = "0.3.5"
 image = "0.23.4"
 winit = "0.22.2"
-wgpu = "0.5.0"
-futures = "0.3.5"
-bytemuck = "1.2.0"
 cgmath = "0.17"
+wgpu = "0.5.0"
