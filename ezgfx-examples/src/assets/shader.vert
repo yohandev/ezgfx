@@ -5,7 +5,7 @@ layout(location = 1) in vec2 a_uv;
 
 layout(location = 0) out vec2 v_uv;
 
-layout(set = 0, binding = 0) uniform TransformUniform
+layout(set = 5, binding = 0) uniform TransformUniform
 {
     mat4 u_view_proj;
     vec3 u_something;

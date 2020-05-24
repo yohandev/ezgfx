@@ -39,10 +39,10 @@ pub fn process(item: TokenStream) -> TokenStream
     let vu = uniforms(&v);
     let fu = uniforms(&f);
 
-    let (binding_group_layouts, sets) = bind_group_layout_descriptors(&[&vu, &fu]);
+    let (binding_group_layouts, binding_groups, sets) = bind_group_layout_descriptors(&[&vu, &fu]);
     let binding_group_layout_sets = sets.iter().map(|s| Ident::new(format!("binding_group_layout_set_{}", s).as_str(), Span::call_site()));
-
-    //panic!("{:?}", binding_group_layouts);
+    let binding_group_sets = sets.iter().map(|s| Ident::new(format!("binding_group_set_{}", s).as_str(), Span::call_site()));
+    let binding_group_layout_sets_ref = sets.iter().map(|s| Ident::new(format!("binding_group_layout_set_{}", s).as_str(), Span::call_site()));
 
     let uniform_names = vu.iter().chain(fu.iter()).map(|u| &u.name);
 
@@ -51,26 +51,13 @@ pub fn process(item: TokenStream) -> TokenStream
 
     let (impl_gene, type_gene, where_clause) = input.generics.split_for_impl();
 
-    //panic!("{:?}", binding_group_layouts);
-
     let expanded = quote!
     {
         impl #impl_gene #pipeline_name #type_gene #where_clause
         {
             pub fn create(render: &ezgfx::RenderQueue, #(#uniform_names : &ezgfx::Uniform,)*)
             {
-                // -- create layout --
-                // let bind_layout = render.device.create_bind_group_layout   // bind group layout
-                // (
-                //     &ezgfx::wgpu::BindGroupLayoutDescriptor
-                //     {
-                //         bindings:
-                //         &[
-                //             #(),*
-                //         ],
-                //         label: Some(format!("{}_bind_group_layout", #name_str).as_str())
-                //     }
-                // );
+                // -- create bind group layouts per set --
                 #(
                     let #binding_group_layout_sets = render.device.create_bind_group_layout
                     (
@@ -81,6 +68,22 @@ pub fn process(item: TokenStream) -> TokenStream
                                 #binding_group_layouts
                             ],
                             label: Some(format!("{}_bind_group_layout", #pipeline_name_str).as_str())
+                        }
+                    );
+                )*
+
+                // -- create bind groups per set --
+                #(
+                    let #binding_group_sets = render.device.create_bind_group
+                    (
+                        &ezgfx::wgpu::BindGroupDescriptor
+                        {
+                            layout: &#binding_group_layout_sets_ref,
+                            bindings:
+                            &[
+                                #binding_groups
+                            ],
+                            label: Some(format!("{}_bind_group", #pipeline_name_str).as_str())
                         }
                     );
                 )*
@@ -156,9 +159,12 @@ struct Uniform
     pub binding: u32,
 }
 
-fn bind_group_layout_descriptors(uniforms: &[&Vec<Uniform>]) -> (Vec<proc_macro2::TokenStream>, Vec<usize>)
+fn bind_group_layout_descriptors(uniforms: &[&Vec<Uniform>]) -> (Vec<proc_macro2::TokenStream>, Vec<proc_macro2::TokenStream>, Vec<usize>)
 {
-    let mut tks =                               // token streams
+    let mut tks_layout =                        // token streams for layout
+        Vec::<proc_macro2::TokenStream>::new();
+
+    let mut tks_bind =                          // token streams for binding
         Vec::<proc_macro2::TokenStream>::new();
 
     for uniform_vec in uniforms.iter()
@@ -180,13 +186,14 @@ fn bind_group_layout_descriptors(uniforms: &[&Vec<Uniform>]) -> (Vec<proc_macro2
             {
                 panic!("expected input shader to be vertex or fragment!")
             };
-            let nam = &uniform.name;             // name
+            let nam = &uniform.name;            // name
 
-            let siz = std::cmp::max(tks.len(), set + 1);
-            tks.resize(siz, quote! {});         // resize
-            
-            let pre = &tks[set];                // previous tokens
-            tks[set] = quote!
+            let siz = std::cmp::max(tks_layout.len(), set + 1);
+            tks_layout.resize(siz, quote! {});  // resize
+            tks_bind.resize(siz, quote! {});
+
+            let pre = &tks_layout[set];         // previous tokens
+            tks_layout[set] = quote!
             {
                 #pre
                 ezgfx::wgpu::BindGroupLayoutEntry
@@ -195,23 +202,42 @@ fn bind_group_layout_descriptors(uniforms: &[&Vec<Uniform>]) -> (Vec<proc_macro2
                     visibility: #sta,
                     ty: #nam.ty()
                 },
-            }
+            };
+
+            let pre = &tks_bind[set];
+            tks_bind[set] = quote!
+            {
+                #pre
+                ezgfx::wgpu::Binding
+                {
+                    binding: #bin,
+                    resource: #nam.resource()
+                },
+            };
         }
     }
 
-    let mut out_tks =                           // out token streams
+    let mut out_tks_layout =                    // out token streams layout
+        Vec::<proc_macro2::TokenStream>::new();
+    let mut out_tks_bind =                      // out token streams bind
         Vec::<proc_macro2::TokenStream>::new();
     let mut out_ind =                           // out set indices
         Vec::<usize>::new(); 
 
-    for (i, t) in tks.iter().enumerate()        // remove empties
+    for (i, t) in tks_layout.iter().enumerate()        // remove empties
     {
         if t.is_empty()
         {
             continue;
         }
-        out_tks.push(t.to_owned());
+        out_tks_layout.push(t.to_owned());
+        out_tks_bind.push(tks_bind[i].to_owned());
         out_ind.push(i);
     }
-    (out_tks, out_ind)
+    (out_tks_layout, out_tks_bind, out_ind)
+}
+
+fn get_bindings_per_set(sets: &Vec<usize>, uniforms: &Vec<Uniform>)
+{
+
 }
