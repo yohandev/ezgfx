@@ -11,8 +11,8 @@ pub fn process(item: TokenStream) -> TokenStream
 {
     let input = parse_macro_input!(item as ItemImpl);
 
-    let v_type = format!("{}", get_type_value("Vertex", &input.items));
-    let i_type = format!("{}", get_type_value("Index", &input.items));
+    let v_type = get_type_value("Vertex", &input.items);
+    let i_type = get_type_value("Index", &input.items);
 
     let v_path = match get_const_value("VERT_PATH", "str", &input.items)
     {
@@ -33,14 +33,15 @@ pub fn process(item: TokenStream) -> TokenStream
     let vert = compile(ShaderKind::Vertex, v_path.as_str());
     let frag = compile(ShaderKind::Fragment, f_path.as_str());
 
-    let v = vert.as_binary();
-    let f = frag.as_binary();
+    let v = vert.as_binary_u8();
+    let f = frag.as_binary_u8();
 
     let vu = uniforms(&v);
     let fu = uniforms(&f);
 
     let (binding_group_layouts, binding_groups, sets) = bind_group_layout_descriptors(&[&vu, &fu]);
     let binding_group_layout_sets = sets.iter().map(|s| Ident::new(format!("binding_group_layout_set_{}", s).as_str(), Span::call_site()));
+    let binding_group_layout_sets2 = binding_group_layout_sets.clone();
     let binding_group_sets = sets.iter().map(|s| Ident::new(format!("binding_group_set_{}", s).as_str(), Span::call_site()));
     let binding_group_layout_sets_ref = sets.iter().map(|s| Ident::new(format!("binding_group_layout_set_{}", s).as_str(), Span::call_site()));
 
@@ -87,6 +88,92 @@ pub fn process(item: TokenStream) -> TokenStream
                         }
                     );
                 )*
+
+                // -- create pipeline layout --
+                let pip_layout = render.device
+                    .create_pipeline_layout
+                    (
+                        &ezgfx::wgpu::PipelineLayoutDescriptor
+                        {
+                            bind_group_layouts: &[#(&#binding_group_layout_sets2),*]
+                        }
+                    );
+                
+                // -- create shader modules --
+                let (v, f) =
+                {
+                    const V_SPIRV: &[u8] = &[#(#v,)*];
+                    const F_SPIRV: &[u8] = &[#(#f,)*];
+
+                    let v = ezgfx::wgpu::read_spirv(std::io::Cursor::new(&V_SPIRV[..])).unwrap();
+                    let f = ezgfx::wgpu::read_spirv(std::io::Cursor::new(&F_SPIRV[..])).unwrap();
+
+                    (v, f)
+                };
+
+                let (v, f) =
+                {
+                    let v = render.device.create_shader_module(&v);
+                    let f = render.device.create_shader_module(&f);
+
+                    (v, f)
+                };
+
+                // -- create pipeline --
+                let pipeline = render.device
+                    .create_render_pipeline
+                    (
+                        &ezgfx::wgpu::RenderPipelineDescriptor
+                        {
+                            layout: &pip_layout,
+                            vertex_stage: ezgfx::wgpu::ProgrammableStageDescriptor
+                            {
+                                module: &v,
+                                entry_point: "main"
+                            },
+                            fragment_stage: Some(ezgfx::wgpu::ProgrammableStageDescriptor
+                            {
+                                module: &f,
+                                entry_point: "main"
+                            }),
+                            rasterization_state: Some(ezgfx::wgpu::RasterizationStateDescriptor
+                            {
+                                front_face: ezgfx::wgpu::FrontFace::Ccw,
+                                cull_mode: ezgfx::wgpu::CullMode::Back,
+                                depth_bias: 0,
+                                depth_bias_slope_scale: 0.0,
+                                depth_bias_clamp: 0.0
+                            }),
+                            color_states: 
+                            &[
+                                ezgfx::wgpu::ColorStateDescriptor
+                                {
+                                    format: ezgfx::wgpu::TextureFormat::Bgra8UnormSrgb,
+                                    color_blend: ezgfx::wgpu::BlendDescriptor::REPLACE,
+                                    alpha_blend: ezgfx::wgpu::BlendDescriptor::REPLACE,
+                                    write_mask: ezgfx::wgpu::ColorWrite::ALL
+                                }
+                            ],
+                            primitive_topology: ezgfx::wgpu::PrimitiveTopology::TriangleList,
+                            depth_stencil_state: None,
+                            vertex_state: ezgfx::wgpu::VertexStateDescriptor
+                            {
+                                index_format: <#i_type as ezgfx::Index>::FORMAT,
+                                vertex_buffers:
+                                &[
+                                    ezgfx::wgpu::VertexBufferDescriptor
+                                    {
+                                        stride: <#v_type as ezgfx::BufMember>::SIZE as ezgfx::wgpu::BufferAddress,
+                                        step_mode: ezgfx::wgpu::InputStepMode::Vertex,
+                                        attributes: <#v_type as ezgfx::Vertex>::DESC
+                                    }
+                                ]
+                            },
+                            sample_count: 1,
+                            sample_mask: !0,
+                            alpha_to_coverage_enabled: false
+                        }
+                    );
             }
         }
     };
@@ -114,11 +201,11 @@ fn compile(stage: ShaderKind, path: &str) -> CompilationArtifact
         .unwrap()
 }
 
-fn uniforms(spirv: &[u32]) -> Vec<Uniform>
+fn uniforms(spirv: &[u8]) -> Vec<Uniform>
 {
     use ezgfx_core::spirv_reflect::*;
 
-    match ShaderModule::load_u32_data(spirv)
+    match ShaderModule::load_u8_data(spirv)
     {
         Ok(ref mut a) =>
         {
