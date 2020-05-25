@@ -1,8 +1,10 @@
 /// implementations of the Uniform trait for common uniform types
 
 mod texture;
+mod sampler;
 
 pub use texture::*;
+pub use sampler::*;
 
 /// represents a generic uniform
 pub trait Uniform
