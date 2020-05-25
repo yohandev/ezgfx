@@ -323,8 +323,3 @@ fn bind_group_layout_descriptors(uniforms: &[&Vec<Uniform>]) -> (Vec<proc_macro2
     }
     (out_tks_layout, out_tks_bind, out_ind)
 }
-
-fn get_bindings_per_set(sets: &Vec<usize>, uniforms: &Vec<Uniform>)
-{
-
-}
