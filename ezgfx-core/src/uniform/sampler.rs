@@ -1,7 +1,7 @@
 use spirv_reflect::types::*;
 use wgpu::*;
 
-use crate::{ Uniform, RenderQueue };
+use crate::{ Uniform, RenderContext };
 
 pub struct Sampler
 {
@@ -28,7 +28,7 @@ impl Uniform for Sampler
 
 impl Sampler
 {
-    pub fn create(render: &RenderQueue, opt: Option<SamplerDescriptor>) -> Self
+    pub fn create(render: &RenderContext, opt: Option<SamplerDescriptor>) -> Self
     {
         let sampler = render.device.create_sampler
         (

@@ -56,11 +56,11 @@ pub fn process(item: TokenStream) -> TokenStream
     {
         impl #impl_gene #pipeline_name #type_gene #where_clause
         {
-            pub fn create(render: &ezgfx::RenderQueue, #(#uniform_names : &ezgfx::Uniform,)*)
+            pub fn create(ctx: &ezgfx::RenderContext, #(#uniform_names : &ezgfx::Uniform,)*)
             {
                 // -- create bind group layouts per set --
                 #(
-                    let #binding_group_layout_sets = render.device.create_bind_group_layout
+                    let #binding_group_layout_sets = ctx.device.create_bind_group_layout
                     (
                         &ezgfx::wgpu::BindGroupLayoutDescriptor
                         {
@@ -75,7 +75,7 @@ pub fn process(item: TokenStream) -> TokenStream
 
                 // -- create bind groups per set --
                 #(
-                    let #binding_group_sets = render.device.create_bind_group
+                    let #binding_group_sets = ctx.device.create_bind_group
                     (
                         &ezgfx::wgpu::BindGroupDescriptor
                         {
@@ -90,7 +90,7 @@ pub fn process(item: TokenStream) -> TokenStream
                 )*
 
                 // -- create pipeline layout --
-                let pip_layout = render.device
+                let pip_layout = ctx.device
                     .create_pipeline_layout
                     (
                         &ezgfx::wgpu::PipelineLayoutDescriptor
@@ -113,14 +113,14 @@ pub fn process(item: TokenStream) -> TokenStream
 
                 let (v, f) =
                 {
-                    let v = render.device.create_shader_module(&v);
-                    let f = render.device.create_shader_module(&f);
+                    let v = ctx.device.create_shader_module(&v);
+                    let f = ctx.device.create_shader_module(&f);
 
                     (v, f)
                 };
 
                 // -- create pipeline --
-                let pipeline = render.device
+                let pipeline = ctx.device
                     .create_render_pipeline
                     (
                         &ezgfx::wgpu::RenderPipelineDescriptor

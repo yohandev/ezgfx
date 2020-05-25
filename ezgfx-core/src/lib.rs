@@ -5,14 +5,14 @@ pub mod wgpu { pub use wgpu::*; }
 
 mod buf_member;
 mod pipeline;
+mod context;
 mod uniform;
 mod vertex;
 mod index;
-mod queue;
 
 pub use self::buf_member::*;
 pub use self::pipeline::*;
+pub use self::context::*;
 pub use self::uniform::*;
 pub use self::vertex::*;
 pub use self::index::*;
-pub use self::queue::*;

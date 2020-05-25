@@ -34,16 +34,16 @@ pub fn run()
     // just graphics, which is beyond the scope of ezgfx
     let evt_loop = EventLoop::new();
 
-    // create a window and render queue from the event loop
-    let (win, ren) = RenderQueue::create(&evt_loop);
+    // create a window and render context from the event loop
+    let (win, ctx) = RenderContext::create(&evt_loop);
     
     // pipeline resources -- these are all uniforms
-    let uni = TransformUniform::create(&ren, [0.0; 16]);
-    let tex = Texture::from_file(&ren, "assets/texture.png");
-    let smp = Sampler::create(&ren, None);
+    let uni = TransformUniform::create(&ctx, [0.0; 16]);
+    let tex = Texture::from_file(&ctx, "assets/texture.png");
+    let smp = Sampler::create(&ctx, None);
 
     // create the pipeline itself
-    let pip = MyGraphicsPipeline::create(&ren, &uni, &tex, &smp);
+    let pip = MyGraphicsPipeline::create(&ctx, &uni, &tex, &smp);
 
     evt_loop.run
     (

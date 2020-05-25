@@ -57,7 +57,7 @@ pub fn impl_uniform(_: TokenStream, item: TokenStream) -> TokenStream
         {
             const SIZE: usize = #size; // macro eval
 
-            pub fn create(render: &ezgfx::RenderQueue, #field_decl) -> Self
+            pub fn create(ctx: &ezgfx::RenderContext, #field_decl) -> Self
             {
                 #[repr(C)]
                 #[derive(Copy, Clone)]
@@ -71,7 +71,7 @@ pub fn impl_uniform(_: TokenStream, item: TokenStream) -> TokenStream
                 
                 let data = Data { #field_names };
 
-                let buf = render.device.create_buffer_with_data
+                let buf = ctx.device.create_buffer_with_data
                 (
                     ezgfx::bytemuck::cast_slice(&[data]),
                     ezgfx::wgpu::BufferUsage::UNIFORM | ezgfx::wgpu::BufferUsage::COPY_DST

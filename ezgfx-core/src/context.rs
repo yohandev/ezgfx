@@ -4,7 +4,7 @@ use winit::window::*;
 use winit::dpi::*;
 use wgpu::*;
 
-pub struct RenderQueue
+pub struct RenderContext
 {
     pub surface: Surface,
     pub adapter: Adapter,
@@ -21,7 +21,7 @@ pub enum RenderAction
     
 }
 
-impl RenderQueue
+impl RenderContext
 {
     /// creates a window and queue
     pub fn create(evt_loop: &EventLoop<()>) -> (Window, Self)

@@ -2,7 +2,7 @@ use spirv_reflect::types::{ ReflectDescriptorBinding, ReflectResourceType };
 use image::*;
 use wgpu::*;
 
-use crate::{ Uniform, RenderQueue };
+use crate::{ Uniform, RenderContext };
 
 pub struct Texture
 {
@@ -34,7 +34,7 @@ impl Uniform for Texture
 
 impl Texture
 {
-    pub fn create(render: &RenderQueue, bytes: Box<[u8]>, name: Option<&str>) -> Self
+    pub fn create(ctx: &RenderContext, bytes: Box<[u8]>, name: Option<&str>) -> Self
     {
         let img =                                           // image
             image::load_from_memory(bytes.as_ref()).unwrap();
@@ -47,7 +47,7 @@ impl Texture
             height: dim.1,
             depth: 1
         };
-        let tex = render.device.create_texture              // texture usage
+        let tex = ctx.device.create_texture              // texture usage
         (
             &TextureDescriptor
             {
@@ -61,14 +61,14 @@ impl Texture
                 label: name
             }
         );
-        let buf = render.device.create_buffer_with_data     // texture buffer
+        let buf = ctx.device.create_buffer_with_data     // texture buffer
         (
             &rgba,
             BufferUsage::COPY_SRC
         );
 
         let mut encoder =                                   // encoder
-            render.device.create_command_encoder
+            ctx.device.create_command_encoder
             (
                 &CommandEncoderDescriptor
                 {
@@ -103,12 +103,12 @@ impl Texture
 
         let view = tex.create_default_view();               // texture view
 
-        render.queue.submit(&[ cmd ]);                      // copy tex buffer to tex view
+        ctx.queue.submit(&[ cmd ]);                      // copy tex buffer to tex view
 
         Self { view }
     }
 
-    pub fn from_file(render: &RenderQueue, path: &str) -> Self
+    pub fn from_file(ctx: &RenderContext, path: &str) -> Self
     {
         let rpath = std::path::Path::new // fallback: std::env::current_dir().unwrap().join(path)
         (
@@ -124,6 +124,6 @@ impl Texture
 
         let name = rpath.file_name().unwrap().to_str();
 
-        Self::create(render, bytes.into_boxed_slice(), name)
+        Self::create(ctx, bytes.into_boxed_slice(), name)
     }
 }
