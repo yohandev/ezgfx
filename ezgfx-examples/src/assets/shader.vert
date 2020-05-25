@@ -5,18 +5,10 @@ layout(location = 1) in vec2 a_uv;
 
 layout(location = 0) out vec2 v_uv;
 
-layout(set = 5, binding = 0) uniform TransformUniform
+layout(set = 1, binding = 0) uniform TransformUniforms
 {
     mat4 u_view_proj;
-    vec3 u_something;
 };
-// layout(set = 2, binding = 0) uniform PooPoo
-// {
-//     float pee;
-// };
-//layout(set = 0, binding = 0) uniform texture2D MyTex;
-//layout(set = 0, binding = 1) uniform texture2D YourTex;
-//layout(set = 0, binding = 2) uniform sampler MySampler;
 
 void main()
 {

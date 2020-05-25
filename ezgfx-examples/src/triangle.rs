@@ -1,17 +1,16 @@
 use ezgfx::*;
 
 #[vertex]
-pub struct PosColorVertex
+pub struct PosTexVertex
 {
     pub position: [f32; 3],
-    pub color: [f32; 3]
+    pub tex: [f32; 2]
 }
 
 #[uniform]
 pub struct TransformUniform
 {
-    pub view_proj: [f32; 16],
-    pub model: [f32; 16]
+    pub view_proj: [f32; 16]
 }
 
 pub struct MyGraphicsPipeline;
@@ -19,7 +18,7 @@ pub struct MyGraphicsPipeline;
 #[pipeline(render)]
 impl MyGraphicsPipeline
 {
-    type Vertex: Vertex = PosColorVertex;
+    type Vertex: Vertex = PosTexVertex;
     type Index: Index   = u16;
 
     const VERT_PATH: str = "assets/shader.vert";
@@ -38,8 +37,13 @@ pub fn run()
     // create a window and render queue from the event loop
     let (win, ren) = RenderQueue::create(&evt_loop);
     
-    let uni = TransformUniform::create(&ren, [0.0; 16], [0.0; 16]);
-    let pip = MyGraphicsPipeline::create(&ren, &uni, &uni);
+    // pipeline resources -- these are all uniforms
+    let uni = TransformUniform::create(&ren, [0.0; 16]);
+    let tex = Texture::from_file(&ren, "assets/texture.png");
+    let smp = Sampler::create(&ren, None);
+
+    // create the pipeline itself
+    let pip = MyGraphicsPipeline::create(&ren, &uni, &tex, &smp);
 
     evt_loop.run
     (

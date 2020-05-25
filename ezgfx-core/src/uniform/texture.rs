@@ -34,7 +34,7 @@ impl Uniform for Texture
 
 impl Texture
 {
-    pub fn create(render: RenderQueue, bytes: Box<[u8]>, name: Option<&str>) -> Self
+    pub fn create(render: &RenderQueue, bytes: Box<[u8]>, name: Option<&str>) -> Self
     {
         let img =                                           // image
             image::load_from_memory(bytes.as_ref()).unwrap();
@@ -108,7 +108,7 @@ impl Texture
         Self { view }
     }
 
-    pub fn from_file(render: RenderQueue, path: &str) -> Self
+    pub fn from_file(render: &RenderQueue, path: &str) -> Self
     {
         let rpath = std::path::Path::new // fallback: std::env::current_dir().unwrap().join(path)
         (

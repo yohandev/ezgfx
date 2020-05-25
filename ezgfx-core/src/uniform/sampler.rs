@@ -28,7 +28,7 @@ impl Uniform for Sampler
 
 impl Sampler
 {
-    pub fn create(render: RenderQueue, opt: Option<SamplerDescriptor>) -> Self
+    pub fn create(render: &RenderQueue, opt: Option<SamplerDescriptor>) -> Self
     {
         let sampler = render.device.create_sampler
         (
