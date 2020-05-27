@@ -56,7 +56,7 @@ pub fn process(item: TokenStream) -> TokenStream
     {
         impl #impl_gene #pipeline_name #type_gene #where_clause
         {
-            pub fn create(ctx: &ezgfx::RenderContext, #(#uniform_names : &ezgfx::Uniform,)*)
+            pub fn create(ctx: &ezgfx::RenderContext, #(#uniform_names : &ezgfx::Uniform,)*) -> ezgfx::wgpu::RenderPipeline
             {
                 // -- create bind group layouts per set --
                 #(
@@ -174,6 +174,8 @@ pub fn process(item: TokenStream) -> TokenStream
                             alpha_to_coverage_enabled: false
                         }
                     );
+
+                pipeline
             }
         }
     };
