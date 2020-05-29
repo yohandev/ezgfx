@@ -4,7 +4,7 @@ use winit::window::*;
 use winit::dpi::*;
 use wgpu::*;
 
-pub struct RenderContext
+pub struct RenderContext<'a>
 {
     // -- context info --
     pub surface: Surface,
@@ -20,9 +20,10 @@ pub struct RenderContext
     // -- frame info --
     frame: Option<SwapChainOutput>,
     encoder: Option<CommandEncoder>,
+    render_pass: Option<RenderPass<'a>>,
 }
 
-impl RenderContext
+impl<'a> RenderContext<'a>
 {
     /// creates a window and queue
     pub fn create(evt_loop: &EventLoop<()>) -> (Window, Self)
@@ -31,13 +32,13 @@ impl RenderContext
             .build(evt_loop)
             .expect("window could not be created!");
 
-        let queue = block_on(Self::create_from_window(&window));
+        let queue = Self::create_from_window(&window);
 
         (window, queue)
     }
 
     /// creates a queue from a window
-    pub async fn create_from_window(window: &Window) -> Self
+    pub fn create_from_window(window: &Window) -> Self
     {
         let size = window.inner_size();     // size
         let surface = Surface::create       // adapter
@@ -50,20 +51,26 @@ impl RenderContext
             power_preference: PowerPreference::Default,
             compatible_surface: Some(&surface)
         };
-        let adapter = Adapter::request      // adapter
-        (
-            &aopt,
-            BackendBit::PRIMARY
-        ).await.unwrap();
+        let adapter = block_on              // adapter
+        (             
+            Adapter::request      
+            (
+                &aopt,
+                BackendBit::PRIMARY
+            )
+        ).unwrap();
 
-        let dq = adapter.request_device     // device, queue
+        let dq = block_on                   // device, queue
         (
-            &DeviceDescriptor
-            {
-                extensions: Extensions { anisotropic_filtering: false },
-                limits: Limits::default()
-            }
-        ).await;
+            adapter.request_device
+            (
+                &DeviceDescriptor
+                {
+                    extensions: Extensions { anisotropic_filtering: false },
+                    limits: Limits::default()
+                }
+            )
+        );
 
         let device = dq.0;                  // device
         let queue = dq.1;                   // queue
@@ -94,6 +101,7 @@ impl RenderContext
             
             frame: None,
             encoder: None,
+            render_pass: None,
         }
     }
 
@@ -134,14 +142,16 @@ impl RenderContext
         );
     }
 
-    pub fn begin_render_pass(&mut self, clear: [f64; 4])
+    pub fn begin_render_pass(&'a mut self, clear: [f64; 4])
     {
         assert!(self.encoder.is_some() && self.frame.is_some(), "missing command encoder or frame. did you forget to call begin_frame?");
 
         let view = &self.frame.as_ref().unwrap().view;
         let encoder = self.encoder.as_mut().unwrap();
 
-        encoder.begin_render_pass    
+        self.render_pass.replace
+        (
+            encoder.begin_render_pass    
             (
                 &RenderPassDescriptor
                 {
@@ -158,8 +168,17 @@ impl RenderContext
                     ],
                     depth_stencil_attachment: None,
                 }
-            );
+            )
+        );
     }
 
+    pub fn set_render_pipeline(&mut self, pip: &'a RenderPipeline)
+    {
+        assert!(self.render_pass.is_some(), "missing render pass. did you forget to call begin_render_pass?");
     
+        self.render_pass
+            .as_mut()
+            .unwrap()
+            .set_pipeline(pip);
+    }
 }
