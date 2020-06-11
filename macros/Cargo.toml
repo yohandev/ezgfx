@@ -1,16 +1,13 @@
 [package]
-name = "ezgfx-derive"
+name = "macros"
 version = "0.1.0"
-authors = ["yohandev"]
+authors = ["_nahoy <42898627+NahoyGames@users.noreply.github.com>"]
 edition = "2018"
 
 [lib]
 proc-macro = true
 
 [dependencies]
-ezgfx-core = { path = "../ezgfx-core" }
-Inflector = "0.11.4"
 proc-macro2 = "1.0"
-shaderc = "0.6.2"
 quote = "1.0.6"
 syn = "1.0.22"
