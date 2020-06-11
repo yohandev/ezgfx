@@ -43,7 +43,8 @@ pub fn process(item: TokenStream) -> TokenStream
     let binding_group_layout_sets = sets.iter().map(|s| Ident::new(format!("binding_group_layout_set_{}", s).as_str(), Span::call_site()));
     let binding_group_layout_sets2 = binding_group_layout_sets.clone();
     let binding_group_sets = sets.iter().map(|s| Ident::new(format!("binding_group_set_{}", s).as_str(), Span::call_site()));
-    let binding_group_layout_sets_ref = sets.iter().map(|s| Ident::new(format!("binding_group_layout_set_{}", s).as_str(), Span::call_site()));
+    let binding_group_layout_sets_ref = binding_group_layout_sets.clone();
+    let binding_group_sets_ref = binding_group_sets.clone();
 
     let uniform_names = vu.iter().chain(fu.iter()).map(|u| &u.name);
 
@@ -56,7 +57,7 @@ pub fn process(item: TokenStream) -> TokenStream
     {
         impl #impl_gene #pipeline_name #type_gene #where_clause
         {
-            pub fn create(ctx: &ezgfx::RenderContext, #(#uniform_names : &ezgfx::Uniform,)*) -> ezgfx::wgpu::RenderPipeline
+            pub fn create(ctx: &ezgfx::RenderContext, #(#uniform_names : &ezgfx::Uniform,)*) -> ezgfx::Pipeline
             {
                 // -- create bind group layouts per set --
                 #(
@@ -175,7 +176,11 @@ pub fn process(item: TokenStream) -> TokenStream
                         }
                     );
 
-                pipeline
+                ezgfx::Pipeline
+                {
+                    pipeline,
+                    bindings: vec![#( (#sets as u32, #binding_group_sets_ref), )*]
+                }
             }
         }
     };

@@ -18,10 +18,14 @@ pub struct RenderContext<'a>
     pub size: PhysicalSize<u32>,
 
     // -- frame info --
-    frame: Option<SwapChainOutput>,
-    encoder: Option<CommandEncoder>,
-    render_pass: Option<RenderPass<'a>>,
+    pub frame: Option<SwapChainOutput>,
+
+    // -- pass info --
+    pass_encoders: std::collections::HashMap<PassID, CommandEncoder>,
+    render_passes: std::collections::HashMap<PassID, RenderPass<'a>>
 }
+
+type PassID = usize;
 
 impl<'a> RenderContext<'a>
 {
@@ -100,8 +104,8 @@ impl<'a> RenderContext<'a>
             size,
             
             frame: None,
-            encoder: None,
-            render_pass: None,
+            pass_encoders: Default::default(),
+            render_passes: Default::default()
         }
     }
 
@@ -120,7 +124,7 @@ impl<'a> RenderContext<'a>
 
     pub fn begin_frame(&mut self)
     {
-        assert!(self.frame.is_none() && self.encoder.is_none(), "called begin_frame before submitting the last frame!");
+        assert!(self.frame.is_none(), "called begin_frame before submitting the last frame!");
 
         self.frame.replace                  // frame texture
         (
@@ -128,30 +132,59 @@ impl<'a> RenderContext<'a>
                 .get_next_texture()
                 .expect("timeout getting texture")
         );
-        
-        self.encoder.replace                // command encoder
-        (
-            self.device
-                .create_command_encoder
-                (
-                    &CommandEncoderDescriptor
-                    {
-                        label: Some("Render Encoder")
-                    }
-                )
-        );
     }
 
-    pub fn begin_render_pass(&'a mut self, clear: [f64; 4])
+    // pub fn create_render_pass<'a>(&'a mut self, clear: [f64; 4]) -> crate::RenderPass<'a>
+    // {
+    //     assert!(self.frame.is_some(), "missing frame. did you forget to call begin_frame?");
+
+    //     // self.frame_encoders.push
+    //     // (
+    //     //     self.device.create_command_encoder
+    //     //     (
+    //     //         &CommandEncoderDescriptor
+    //     //         {
+    //     //             label: Some("render_pass_encoder")
+    //     //         }
+    //     //     )
+    //     // );
+
+    //     crate::RenderPass::<'a>::new(self, clear)
+    // }
+
+    pub fn begin_render_pass(&'a mut self, clear: [f64; 4]) -> PassID
     {
-        assert!(self.encoder.is_some() && self.frame.is_some(), "missing command encoder or frame. did you forget to call begin_frame?");
+        let id = 
+        {
+            let mut i = 0;
+            loop
+            {
+                if !self.pass_encoders.contains_key(&i)
+                {
+                    break;
+                }
+            };
+            i
+        };
+
+        self.pass_encoders.insert
+        (
+            id,
+            self.device.create_command_encoder
+            (
+                &CommandEncoderDescriptor
+                {
+                    label: Some("render_pass_encoder")
+                }
+            )
+        );
 
         let view = &self.frame.as_ref().unwrap().view;
-        let encoder = self.encoder.as_mut().unwrap();
 
-        self.render_pass.replace
+        self.render_passes.insert
         (
-            encoder.begin_render_pass    
+            id,
+            self.pass_encoders.get_mut(&0usize).unwrap().begin_render_pass
             (
                 &RenderPassDescriptor
                 {
@@ -170,15 +203,7 @@ impl<'a> RenderContext<'a>
                 }
             )
         );
-    }
 
-    pub fn set_render_pipeline(&mut self, pip: &'a RenderPipeline)
-    {
-        assert!(self.render_pass.is_some(), "missing render pass. did you forget to call begin_render_pass?");
-    
-        self.render_pass
-            .as_mut()
-            .unwrap()
-            .set_pipeline(pip);
+        id
     }
 }

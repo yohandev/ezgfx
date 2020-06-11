@@ -1,5 +1,11 @@
 use crate::*;
 
+pub struct Pipeline
+{
+    pub pipeline: wgpu::RenderPipeline,
+    pub bindings: Vec<(u32, wgpu::BindGroup)>
+}
+
 /// describes a pipeline used to render things
 pub trait RenderPipeline
 {
