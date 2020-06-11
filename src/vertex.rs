@@ -1,14 +1,14 @@
 use wgpu::*;
 
 /// represents a vertex, to be used in meshes
-pub trait Vertex: crate::BufMember
+pub trait Vertex: Sized
 {
     /// description of this shader, as represented in shaders
     const DESC: &'static [VertexAttributeDescriptor];
 }
 
 /// implementors can be used in vertex descriptions 
-pub trait VertexAttribute: crate::BufMember
+pub trait VertexAttribute: Sized
 {
     const FORMAT: VertexFormat;
 }

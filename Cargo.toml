@@ -1,8 +1,10 @@
-[workspace]
+[package]
+name = "ezgfx"
+version = "0.1.0"
+authors = ["_nahoy <42898627+NahoyGames@users.noreply.github.com>"]
+edition = "2018"
 
-members = [
-    "ezgfx",
-    "ezgfx-core",
-    "ezgfx-derive",
-    "ezgfx-examples"
-]
+[dependencies]
+bytemuck = "1.2.0"
+wgpu = "0.5.0"
+macros = { path = "./macros" }

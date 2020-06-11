@@ -1,10 +1,10 @@
 [package]
-name = "ezgfx-examples"
+name = "utils_showcase"
 version = "0.1.0"
-authors = ["yohandev"]
+authors = ["_nahoy <42898627+NahoyGames@users.noreply.github.com>"]
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-ezgfx = { path = "../ezgfx" }
+ezgfx = { path = "../../" }
