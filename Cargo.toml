@@ -1,10 +1,12 @@
 [package]
 name = "ezgfx"
 version = "0.1.0"
-authors = ["_nahoy <42898627+NahoyGames@users.noreply.github.com>"]
+authors = ["yohandev"]
+description = "work-in-progress ez graphics library"
+repository = "github.com/yohandev/ezgfx"
 edition = "2018"
 
 [dependencies]
 bytemuck = "1.2.0"
 wgpu = "0.5.0"
-macros = { path = "./macros" }
+macros = { path = "./macros", version = "0.1.0" }
